@@ -2,33 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-/* FalconVision Design System - Elite Aerial Agricultural Intelligence 
+/* HoverFly Design System - Elite Aerial Agricultural Intelligence 
 All colors MUST be HSL for proper theming.
 */
 
 @layer base {
   :root {
-    /* Base colors - Clean tactical interface */
+    /* Base colors - Crystal White interface */
     --background: 0 0% 100%;
-    --foreground: 210 11% 15%;
+    --foreground: 120 3% 20%;
 
     /* Card components with glass morphism */
     --card: 0 0% 100%;
-    --card-foreground: 210 11% 15%;
+    --card-foreground: 120 3% 20%;
 
     /* Popover elements */
     --popover: 0 0% 100%;
-    --popover-foreground: 210 11% 15%;
+    --popover-foreground: 120 3% 20%;
 
-    /* Primary - Earthy Agricultural Green */
-    --primary: 142 76% 36%;
-    --primary-foreground: 0 0% 98%;
-    --primary-variant: 142 69% 45%;
+    /* Primary - Earth Green */
+    --primary: 142 60% 30%;
+    --primary-foreground: 0 0% 100%;
+    --primary-variant: 142 55% 40%;
 
-    /* Secondary - Sky Blue Intelligence */
-    --secondary: 217 91% 60%;
-    --secondary-foreground: 0 0% 98%;
-    --secondary-variant: 221 83% 53%;
+    /* Secondary - Crystal White Intelligence */
+    --secondary: 0 0% 98%;
+    --secondary-foreground: 120 3% 20%;
+    --secondary-variant: 0 0% 95%;
 
     /* Muted tactical elements */
     --muted: 210 40% 96%;
@@ -58,9 +58,9 @@ All colors MUST be HSL for proper theming.
     --ring: 142 76% 36%;
 
     /* Gradients for elite aesthetics */
-    --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 69% 45%));
-    --gradient-secondary: linear-gradient(135deg, hsl(217 91% 60%), hsl(221 83% 53%));
-    --gradient-hero: linear-gradient(135deg, hsl(142 76% 36% / 0.9), hsl(217 91% 60% / 0.9));
+    --gradient-primary: linear-gradient(135deg, hsl(142 60% 30%), hsl(142 55% 40%));
+    --gradient-secondary: linear-gradient(135deg, hsl(0 0% 98%), hsl(0 0% 95%));
+    --gradient-hero: linear-gradient(135deg, hsl(142 60% 30% / 0.9), hsl(0 0% 98% / 0.9));
     --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.1), hsl(0 0% 100% / 0.05));
 
     /* Shadows for depth */
@@ -145,7 +145,7 @@ All colors MUST be HSL for proper theming.
   }
 }
 
-/* Custom component styles for FalconVision */
+/* Custom component styles for HoverFly */
 @layer components {
   /* Glass morphism cards */
   .card-glass {

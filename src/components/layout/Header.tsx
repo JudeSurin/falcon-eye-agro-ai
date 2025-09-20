@@ -15,9 +15,9 @@ export default function Header() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo and Brand */}
         <div className="flex items-center gap-3">
-          <img src={falconLogo} alt="FalconVision" className="h-10 w-10" />
+          <img src={falconLogo} alt="HoverFly" className="h-10 w-10" />
           <div>
-            <h1 className="text-xl font-bold text-foreground">FalconVision</h1>
+            <h1 className="text-xl font-bold text-foreground">HoverFly</h1>
             <p className="text-xs text-muted-foreground font-medium">Elite Aerial Intelligence</p>
           </div>
         </div>
