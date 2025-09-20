@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Zap, Activity, AlertTriangle, Target, Satellite, QrCode, X } from "lucide-react";
+import { MapPin, Zap, Activity, AlertTriangle, Target, Satellite, QrCode, X, Camera, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Loader } from "@googlemaps/js-api-loader";
 
@@ -22,40 +22,92 @@ const statusConfig = {
   critical: { color: "critical", bgColor: "bg-critical", icon: AlertTriangle },
 };
 
-interface BarcodePoint {
+interface WaypointMarker {
   id: number;
   x: number;
   y: number;
   order: number;
+  type: 'waypoint' | 'barcode';
 }
 
 export default function MissionMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<HTMLDivElement>(null);
   const [showSatellite, setShowSatellite] = useState(false);
-  const [showBarcodeTracker, setShowBarcodeTracker] = useState(false);
-  const [barcodePoints, setBarcodePoints] = useState<BarcodePoint[]>([]);
+  const [showWaypointMode, setShowWaypointMode] = useState(false);
+  const [waypoints, setWaypoints] = useState<WaypointMarker[]>([]);
   const [mapInstance, setMapInstance] = useState<any>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragCounter, setDragCounter] = useState(0);
 
   const handleMapClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!showBarcodeTracker || barcodePoints.length >= 10) return;
+    if (!showWaypointMode || waypoints.length >= 10) return;
     
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
     
-    const newPoint: BarcodePoint = {
+    const newWaypoint: WaypointMarker = {
       id: Date.now(),
       x,
       y,
-      order: barcodePoints.length + 1
+      order: waypoints.length + 1,
+      type: 'waypoint'
     };
     
-    setBarcodePoints(prev => [...prev, newPoint]);
+    setWaypoints(prev => [...prev, newWaypoint]);
   };
 
-  const clearBarcodePoints = () => {
-    setBarcodePoints([]);
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+  };
+
+  const handleDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragCounter(prev => prev + 1);
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragCounter(prev => prev - 1);
+    if (dragCounter === 1) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    setDragCounter(0);
+    
+    if (!showWaypointMode || waypoints.length >= 10) return;
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    
+    const newWaypoint: WaypointMarker = {
+      id: Date.now(),
+      x,
+      y,
+      order: waypoints.length + 1,
+      type: 'barcode'
+    };
+    
+    setWaypoints(prev => [...prev, newWaypoint]);
+  };
+
+  const clearWaypoints = () => {
+    setWaypoints([]);
+  };
+
+  const deployMission = () => {
+    if (waypoints.length === 0) {
+      alert('Please place at least one waypoint before deploying mission');
+      return;
+    }
+    alert(`Mission deployed with ${waypoints.length} waypoints!`);
   };
 
   // Initialize Google Maps
@@ -138,24 +190,33 @@ export default function MissionMap() {
           <h3 className="text-lg font-semibold text-foreground">Tactical Overview</h3>
           <p className="text-sm text-muted-foreground">Real-time agricultural intelligence</p>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" className="hover:border-primary/30">
-            <MapPin className="h-4 w-4 mr-2" />
-            Mark Waypoint
-          </Button>
-          <Button size="sm" variant="outline" className="hover:border-primary/30" onClick={() => setShowBarcodeTracker(!showBarcodeTracker)}>
+        <div className="flex gap-2 flex-wrap">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="hover:border-primary/30" 
+            onClick={() => setShowWaypointMode(!showWaypointMode)}
+          >
             <QrCode className="h-4 w-4 mr-2" />
-            Barcode Tracker
+            Waypoint Tracker
           </Button>
-          {showBarcodeTracker && (
-            <Button size="sm" variant="destructive" onClick={clearBarcodePoints}>
+          {showWaypointMode && (
+            <Button size="sm" variant="destructive" onClick={clearWaypoints}>
               <X className="h-4 w-4 mr-2" />
-              Clear Points
+              Clear Waypoints
             </Button>
           )}
-          <Button size="sm" className="btn-command">
+          <Button size="sm" className="btn-command" onClick={deployMission}>
             <Zap className="h-4 w-4 mr-2" />
             Deploy Mission
+          </Button>
+          <Button size="sm" variant="outline" className="hover:border-primary/30">
+            <Camera className="h-4 w-4 mr-2" />
+            Capture Intel
+          </Button>
+          <Button size="sm" variant="outline" className="hover:border-primary/30">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Analysis Report
           </Button>
         </div>
       </div>
@@ -177,10 +238,27 @@ export default function MissionMap() {
       </div>
 
       {/* Map Container */}
-      <div className="relative h-96 rounded-xl border border-primary/20 overflow-hidden">
-        {showBarcodeTracker && (
+      <div 
+        className={cn(
+          "relative h-96 rounded-xl border border-primary/20 overflow-hidden",
+          showWaypointMode && "cursor-crosshair",
+          isDragging && "ring-2 ring-primary/50 bg-primary/5"
+        )}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {showWaypointMode && (
           <div className="absolute top-2 left-2 z-20 bg-primary text-primary-foreground px-3 py-1 rounded-md text-sm font-medium">
-            Click to place waypoints ({barcodePoints.length}/10)
+            Click or drag waypoints to place ({waypoints.length}/10)
+          </div>
+        )}
+        {isDragging && (
+          <div className="absolute inset-0 z-10 bg-primary/10 flex items-center justify-center">
+            <div className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium">
+              Drop to place waypoint
+            </div>
           </div>
         )}
         
@@ -264,44 +342,60 @@ export default function MissionMap() {
           );
         })}
 
-        {/* Barcode Tracker Points */}
-        {barcodePoints.map((point) => (
+        {/* Waypoint Markers */}
+        {waypoints.map((waypoint) => (
           <div
-            key={point.id}
+            key={waypoint.id}
             className="absolute transform -translate-x-1/2 -translate-y-1/2 group"
-            style={{ left: `${point.x}%`, top: `${point.y}%` }}
+            style={{ left: `${waypoint.x}%`, top: `${waypoint.y}%` }}
+            draggable={showWaypointMode}
+            onDragStart={(e) => {
+              if (showWaypointMode) {
+                e.dataTransfer.setData('text/plain', '');
+              }
+            }}
           >
-            {/* Point Marker */}
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold border-2 border-white shadow-lg group-hover:scale-125 transition-transform duration-200">
-              {point.order}
+            {/* Waypoint Marker */}
+            <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center text-primary-foreground font-bold border-2 border-white shadow-lg group-hover:scale-125 transition-transform duration-200",
+              waypoint.type === 'barcode' ? "bg-secondary" : "bg-primary"
+            )}>
+              {waypoint.type === 'barcode' ? <QrCode className="h-4 w-4" /> : waypoint.order}
             </div>
 
-            {/* Point Info Popup */}
+            {/* Waypoint Info Popup */}
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
               <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 min-w-[160px] border border-border/50">
                 <img 
-                  src="https://images.unsplash.com/photo-1473773508845-188df298d2d1?w=200&h=120"
-                  alt={`Waypoint ${point.order}`}
+                  src={waypoint.type === 'barcode' 
+                    ? "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=200&h=120"
+                    : "https://images.unsplash.com/photo-1473773508845-188df298d2d1?w=200&h=120"
+                  }
+                  alt={`${waypoint.type === 'barcode' ? 'Barcode' : 'Waypoint'} ${waypoint.order}`}
                   className="w-full h-16 object-cover rounded-md mb-2"
                 />
-                <h4 className="font-semibold text-sm text-foreground">Waypoint {point.order}</h4>
-                <p className="text-xs text-muted-foreground">Barcode tracking point</p>
+                <h4 className="font-semibold text-sm text-foreground">
+                  {waypoint.type === 'barcode' ? 'Barcode Scanner' : `Waypoint ${waypoint.order}`}
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  {waypoint.type === 'barcode' ? 'Tree barcode tracking' : 'Navigation waypoint'}
+                </p>
               </div>
             </div>
 
-            {/* Connection line to next point */}
-            {point.order < barcodePoints.length && (
+            {/* Connection line to next waypoint */}
+            {waypoint.order < waypoints.length && (
               <svg className="absolute top-0 left-0 w-screen h-screen pointer-events-none -z-10">
                 {(() => {
-                  const nextPoint = barcodePoints.find(p => p.order === point.order + 1);
-                  if (!nextPoint) return null;
+                  const nextWaypoint = waypoints.find(p => p.order === waypoint.order + 1);
+                  if (!nextWaypoint) return null;
                   
                   return (
                     <line
-                      x1={`${point.x}%`}
-                      y1={`${point.y}%`}
-                      x2={`${nextPoint.x}%`}
-                      y2={`${nextPoint.y}%`}
+                      x1={`${waypoint.x}%`}
+                      y1={`${waypoint.y}%`}
+                      x2={`${nextWaypoint.x}%`}
+                      y2={`${nextWaypoint.y}%`}
                       stroke="hsl(var(--primary))"
                       strokeWidth="2"
                       strokeDasharray="5,5"
