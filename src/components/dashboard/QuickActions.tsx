@@ -22,13 +22,6 @@ const quickActions = [
     urgent: true,
   },
   {
-    id: 2,
-    title: "Mark Waypoint",
-    subtitle: "Set tactical coordinates",
-    icon: MapPin,
-    variant: "secondary" as const,
-  },
-  {
     id: 3,
     title: "Capture Intel",
     subtitle: "High-resolution surveillance",
@@ -47,13 +40,6 @@ const quickActions = [
     title: "Satellite View",
     subtitle: "Orbital intelligence feed",
     icon: Satellite,
-    variant: "secondary" as const,
-  },
-  {
-    id: 6,
-    title: "Target Lock",
-    subtitle: "Focus area monitoring",
-    icon: Target,
     variant: "secondary" as const,
   },
 ];

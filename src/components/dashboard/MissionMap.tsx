@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Zap, Activity, AlertTriangle } from "lucide-react";
+import { MapPin, Zap, Activity, AlertTriangle, Target, Satellite } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Loader } from "@googlemaps/js-api-loader";
 
 // Mock data for agricultural zones
 const mockZones = [
@@ -23,6 +24,82 @@ const statusConfig = {
 
 export default function MissionMap() {
   const mapRef = useRef<HTMLDivElement>(null);
+  const googleMapRef = useRef<HTMLDivElement>(null);
+  const [showSatellite, setShowSatellite] = useState(false);
+  const [mapInstance, setMapInstance] = useState<any>(null);
+
+  // Initialize Google Maps
+  useEffect(() => {
+    if (!googleMapRef.current || mapInstance) return;
+
+    const loader = new Loader({
+      apiKey: "AIzaSyAJGjJcU4nXG2-PKEUT_xcqquIJSRt8Qj4",
+      version: "weekly",
+    });
+
+    loader.load().then(() => {
+      const map = new google.maps.Map(googleMapRef.current!, {
+        center: { lat: 40.7128, lng: -74.0060 },
+        zoom: 15,
+        mapTypeId: showSatellite ? 'satellite' : 'hybrid',
+        styles: [
+          {
+            featureType: "all",
+            stylers: [{ saturation: -20 }, { lightness: 10 }]
+          }
+        ]
+      });
+
+      // Add markers for agricultural zones
+      mockZones.forEach((zone) => {
+        const marker = new google.maps.Marker({
+          position: { lat: 40.7128 + (zone.x - 50) * 0.01, lng: -74.0060 + (zone.y - 50) * 0.01 },
+          map,
+          title: zone.name,
+          icon: {
+            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="8" fill="${
+                  zone.status === 'secure' ? '#10b981' :
+                  zone.status === 'monitor' ? '#f59e0b' :
+                  zone.status === 'alert' ? '#f97316' : '#ef4444'
+                }" stroke="white" stroke-width="2"/>
+              </svg>
+            `)}`,
+            scaledSize: new google.maps.Size(24, 24)
+          }
+        });
+
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="padding: 8px;">
+              <h3 style="margin: 0; font-weight: bold;">${zone.name}</h3>
+              <p style="margin: 4px 0; color: #666;">Health: ${zone.health}%</p>
+              <p style="margin: 4px 0; color: #666;">Status: ${zone.status.toUpperCase()}</p>
+            </div>
+          `
+        });
+
+        marker.addListener('click', () => {
+          infoWindow.open(map, marker);
+        });
+      });
+
+      setMapInstance(map);
+    }).catch(() => {
+      // Fallback to tactical map if Google Maps fails to load
+      console.log('Google Maps failed to load, using fallback');
+    });
+  }, [showSatellite]);
+
+  // Toggle map type
+  const toggleMapType = () => {
+    if (mapInstance) {
+      const newType = showSatellite ? 'hybrid' : 'satellite';
+      mapInstance.setMapTypeId(newType);
+      setShowSatellite(!showSatellite);
+    }
+  };
 
   return (
     <Card className="p-6 card-tactical">
@@ -32,6 +109,14 @@ export default function MissionMap() {
           <p className="text-sm text-muted-foreground">Real-time agricultural intelligence</p>
         </div>
         <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="hover:border-primary/30">
+            <MapPin className="h-4 w-4 mr-2" />
+            Mark Waypoint
+          </Button>
+          <Button size="sm" variant="outline" className="hover:border-primary/30">
+            <Target className="h-4 w-4 mr-2" />
+            Target Lock
+          </Button>
           <Button size="sm" className="btn-command">
             <Zap className="h-4 w-4 mr-2" />
             Deploy Mission
@@ -39,11 +124,33 @@ export default function MissionMap() {
         </div>
       </div>
 
+      {/* Map Toggle Bar */}
+      <div className="mb-4 flex items-center justify-between p-3 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border border-primary/20">
+        <div className="flex items-center gap-2">
+          <Satellite className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium text-foreground">Map View</span>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={toggleMapType}
+          className="hover:border-primary/30"
+        >
+          {showSatellite ? 'Hybrid View' : 'Satellite View'}
+        </Button>
+      </div>
+
       {/* Map Container */}
-      <div 
-        ref={mapRef}
-        className="relative h-96 bg-gradient-to-br from-success/5 to-secondary/5 rounded-xl border border-primary/20 overflow-hidden"
-      >
+      <div className="relative h-96 rounded-xl border border-primary/20 overflow-hidden">
+        {/* Google Maps */}
+        <div ref={googleMapRef} className="absolute inset-0 w-full h-full" />
+        
+        {/* Fallback Tactical Map */}
+        <div 
+          ref={mapRef}
+          className="absolute inset-0 bg-gradient-to-br from-success/5 to-secondary/5"
+          style={{ display: mapInstance ? 'none' : 'block' }}
+        >
         {/* Tactical Grid Overlay */}
         <div className="absolute inset-0 opacity-20">
           <svg width="100%" height="100%" className="absolute inset-0">
@@ -126,6 +233,7 @@ export default function MissionMap() {
             className="animate-tactical-scan"
           />
         </svg>
+        </div>
       </div>
 
       {/* Map Legend */}

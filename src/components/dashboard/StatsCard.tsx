@@ -13,6 +13,7 @@ interface StatsCardProps {
   };
   variant?: "default" | "success" | "warning" | "alert" | "critical";
   className?: string;
+  onClick?: () => void;
 }
 
 export default function StatsCard({
@@ -23,6 +24,7 @@ export default function StatsCard({
   trend,
   variant = "default",
   className,
+  onClick,
 }: StatsCardProps) {
   const variantStyles = {
     default: "card-glass",
@@ -33,11 +35,15 @@ export default function StatsCard({
   };
 
   return (
-    <Card className={cn(
-      "p-6 transition-all duration-300 hover:scale-105 animate-fade-in",
-      variantStyles[variant],
-      className
-    )}>
+    <Card 
+      className={cn(
+        "p-6 transition-all duration-300 hover:scale-105 animate-fade-in",
+        variantStyles[variant],
+        onClick && "cursor-pointer hover:ring-2 hover:ring-primary/20",
+        className
+      )}
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>

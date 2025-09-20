@@ -1,12 +1,15 @@
-import { Activity, Zap, Shield, Target, Eye, BarChart3 } from "lucide-react";
+import { Activity, Zap, Shield, Target, Eye, BarChart3, X } from "lucide-react";
+import { useState } from "react";
 import Header from "@/components/layout/Header";
 import StatsCard from "@/components/dashboard/StatsCard";
 import MissionMap from "@/components/dashboard/MissionMap";
 import QuickActions from "@/components/dashboard/QuickActions";
 import WeatherWidget from "@/components/dashboard/WeatherWidget";
+import DetailModal from "@/components/dashboard/DetailModal";
 import heroImage from "@/assets/hero-agricultural-drone.jpg";
 
 const Index = () => {
+  const [selectedStat, setSelectedStat] = useState<string | null>(null);
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -48,10 +51,11 @@ const Index = () => {
           <StatsCard
             title="Active Missions"
             value={3}
-            subtitle="2 reconnaissance, 1 surveillance"
+            subtitle="Mission report, reporting, and reported"
             icon={<Zap className="h-5 w-5" />}
             trend={{ value: 12, isPositive: true }}
             variant="success"
+            onClick={() => setSelectedStat('missions')}
           />
           <StatsCard
             title="Crop Health Average"
@@ -60,6 +64,7 @@ const Index = () => {
             icon={<Activity className="h-5 w-5" />}
             trend={{ value: 5, isPositive: true }}
             variant="default"
+            onClick={() => setSelectedStat('health')}
           />
           <StatsCard
             title="Threats Detected"
@@ -68,6 +73,7 @@ const Index = () => {
             icon={<Shield className="h-5 w-5" />}
             trend={{ value: -25, isPositive: false }}
             variant="warning"
+            onClick={() => setSelectedStat('threats')}
           />
           <StatsCard
             title="Areas Analyzed"
@@ -76,6 +82,7 @@ const Index = () => {
             icon={<Target className="h-5 w-5" />}
             trend={{ value: 8, isPositive: true }}
             variant="default"
+            onClick={() => setSelectedStat('areas')}
           />
         </div>
 
@@ -146,6 +153,14 @@ const Index = () => {
           </div>
         </div>
       </main>
+
+      {/* Detail Modal */}
+      {selectedStat && (
+        <DetailModal 
+          type={selectedStat} 
+          onClose={() => setSelectedStat(null)} 
+        />
+      )}
     </div>
   );
 };
