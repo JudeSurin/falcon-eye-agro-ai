@@ -6,13 +6,13 @@ import { MapPin, Zap, Activity, AlertTriangle, Target, Satellite, QrCode, X, Cam
 import { cn } from "@/lib/utils";
 import { Loader } from "@googlemaps/js-api-loader";
 
-// Mock data for agricultural zones
+// Mock data for agricultural zones in Miami/Brickell area
 const mockZones = [
-  { id: 1, name: "North Field", health: 85, status: "secure", x: 25, y: 30, image: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=200&h=150" },
-  { id: 2, name: "South Field", health: 92, status: "secure", x: 70, y: 60, image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=200&h=150" },
-  { id: 3, name: "East Orchard", health: 67, status: "monitor", x: 80, y: 25, image: "https://images.unsplash.com/photo-1560493676-04071c5f467b?w=200&h=150" },
-  { id: 4, name: "West Crops", health: 45, status: "alert", x: 15, y: 70, image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=200&h=150" },
-  { id: 5, name: "Central Farm", health: 28, status: "critical", x: 50, y: 45, image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=150" },
+  { id: 1, name: "Brickell Farm", health: 85, status: "secure", x: 25, y: 30, image: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=200&h=150", droneImage: "https://images.unsplash.com/photo-1473773508845-188df298d2d1?w=200&h=150" },
+  { id: 2, name: "Downtown Grove", health: 92, status: "secure", x: 70, y: 60, image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=200&h=150", droneImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=150" },
+  { id: 3, name: "Bay Orchard", health: 67, status: "monitor", x: 80, y: 25, image: "https://images.unsplash.com/photo-1560493676-04071c5f467b?w=200&h=150", droneImage: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=200&h=150" },
+  { id: 4, name: "Miami River Crops", health: 45, status: "alert", x: 15, y: 70, image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=200&h=150", droneImage: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=200&h=150" },
+  { id: 5, name: "Biscayne Gardens", health: 28, status: "critical", x: 50, y: 45, image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=150", droneImage: "https://images.unsplash.com/photo-1561136594-7f68413baa99?w=200&h=150" },
 ];
 
 const statusConfig = {
@@ -121,9 +121,9 @@ export default function MissionMap() {
 
     loader.load().then(() => {
       const map = new google.maps.Map(googleMapRef.current!, {
-        center: { lat: 40.7128, lng: -74.0060 },
+        center: { lat: 25.7617, lng: -80.1918 }, // Miami/Brickell area
         zoom: 15,
-        mapTypeId: showSatellite ? 'satellite' : 'hybrid',
+        mapTypeId: showSatellite ? 'satellite' : 'roadmap',
         styles: [
           {
             featureType: "all",
@@ -132,10 +132,10 @@ export default function MissionMap() {
         ]
       });
 
-      // Add markers for agricultural zones
+      // Add markers for agricultural zones in Miami/Brickell
       mockZones.forEach((zone) => {
         const marker = new google.maps.Marker({
-          position: { lat: 40.7128 + (zone.x - 50) * 0.01, lng: -74.0060 + (zone.y - 50) * 0.01 },
+          position: { lat: 25.7617 + (zone.x - 50) * 0.005, lng: -80.1918 + (zone.y - 50) * 0.005 },
           map,
           title: zone.name,
           icon: {
@@ -154,10 +154,12 @@ export default function MissionMap() {
 
         const infoWindow = new google.maps.InfoWindow({
           content: `
-            <div style="padding: 8px;">
+            <div style="padding: 12px; max-width: 200px;">
+              <img src="${zone.droneImage}" alt="Drone view" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />
               <h3 style="margin: 0; font-weight: bold;">${zone.name}</h3>
               <p style="margin: 4px 0; color: #666;">Health: ${zone.health}%</p>
               <p style="margin: 4px 0; color: #666;">Status: ${zone.status.toUpperCase()}</p>
+              <p style="margin: 4px 0; color: #888; font-size: 12px;">Live drone footage</p>
             </div>
           `
         });
@@ -177,7 +179,7 @@ export default function MissionMap() {
   // Toggle map type
   const toggleMapType = () => {
     if (mapInstance) {
-      const newType = showSatellite ? 'hybrid' : 'satellite';
+      const newType = showSatellite ? 'roadmap' : 'satellite';
       mapInstance.setMapTypeId(newType);
       setShowSatellite(!showSatellite);
     }
@@ -233,7 +235,7 @@ export default function MissionMap() {
           onClick={toggleMapType}
           className="hover:border-primary/30"
         >
-          {showSatellite ? 'Hybrid View' : 'Satellite View'}
+          {showSatellite ? 'Map View' : 'Satellite View'}
         </Button>
       </div>
 
@@ -308,13 +310,13 @@ export default function MissionMap() {
                 <IconComponent className="h-4 w-4" />
               </div>
 
-              {/* Zone Info Popup with Image */}
+              {/* Zone Info Popup with Live Drone Image */}
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
                 <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 min-w-[200px] border border-border/50">
                   <img 
-                    src={zone.image} 
-                    alt={zone.name}
-                    className="w-full h-20 object-cover rounded-md mb-2"
+                    src={zone.droneImage} 
+                    alt={`Live drone footage of ${zone.name}`}
+                    className="w-full h-20 object-cover rounded-md mb-2 border border-primary/20"
                   />
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold text-sm text-foreground">{zone.name}</h4>
@@ -322,7 +324,7 @@ export default function MissionMap() {
                       {zone.status.toUpperCase()}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs text-muted-foreground">Health:</span>
                     <span className={cn(
                       "text-xs font-medium",
@@ -332,6 +334,10 @@ export default function MissionMap() {
                     )}>
                       {zone.health}%
                     </span>
+                  </div>
+                  <div className="text-xs text-primary flex items-center gap-1">
+                    <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                    Live drone feed
                   </div>
                 </div>
               </div>
@@ -363,7 +369,7 @@ export default function MissionMap() {
               {waypoint.type === 'barcode' ? <QrCode className="h-4 w-4" /> : waypoint.order}
             </div>
 
-            {/* Waypoint Info Popup */}
+            {/* Waypoint Info Popup with Live Feed */}
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
               <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 min-w-[160px] border border-border/50">
                 <img 
@@ -372,7 +378,7 @@ export default function MissionMap() {
                     : "https://images.unsplash.com/photo-1473773508845-188df298d2d1?w=200&h=120"
                   }
                   alt={`${waypoint.type === 'barcode' ? 'Barcode' : 'Waypoint'} ${waypoint.order}`}
-                  className="w-full h-16 object-cover rounded-md mb-2"
+                  className="w-full h-16 object-cover rounded-md mb-2 border border-primary/20"
                 />
                 <h4 className="font-semibold text-sm text-foreground">
                   {waypoint.type === 'barcode' ? 'Barcode Scanner' : `Waypoint ${waypoint.order}`}
@@ -380,6 +386,10 @@ export default function MissionMap() {
                 <p className="text-xs text-muted-foreground">
                   {waypoint.type === 'barcode' ? 'Tree barcode tracking' : 'Navigation waypoint'}
                 </p>
+                <div className="text-xs text-primary flex items-center gap-1 mt-1">
+                  <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                  Live feed
+                </div>
               </div>
             </div>
 
