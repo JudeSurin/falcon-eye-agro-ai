@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useAuth0 } from '@auth0/auth0-react';
 import { useAuthStore } from '../store/authStore';
 import { 
   RiGoogleFill, 
@@ -17,6 +18,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 
 const Auth = () => {
+  const { loginWithRedirect, isLoading: auth0Loading, isAuthenticated, user } = useAuth0();
   const { login, isLoading } = useAuthStore();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -31,34 +33,53 @@ const Auth = () => {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // Removed Auth0 dependency for demo mode
+  // Handle Auth0 authentication result
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      const handleAuth0User = async () => {
+        try {
+          const result = await login({
+            sub: user.sub || '',
+            email: user.email || '',
+            name: user.name || user.nickname || 'HoverFly Pilot',
+            picture: user.picture || '',
+            provider: user.sub?.split('|')[0] || 'unknown'
+          });
+          
+          if (result.success) {
+            toast({
+              title: "Welcome to HoverFly Command Center!",
+              description: "Authentication successful - accessing drone systems",
+            });
+            navigate('/');
+          }
+        } catch (error) {
+          console.error('Auth0 user processing error:', error);
+        }
+      };
+      
+      handleAuth0User();
+    }
+  }, [isAuthenticated, user, login, navigate, toast]);
 
-  // Removed Auth0 dependency for demo mode
-
-  const handleSocialLogin = async (provider: string) => {
+  const handleSocialLogin = async (provider: 'google' | 'github') => {
     try {
-      // Demo mode - simulate successful authentication
-      const demoUser = {
-        sub: `${provider}|demo123`,
-        email: `pilot@hoverfly-demo.com`,
-        name: 'Elite Pilot Alpha',
-        picture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-        provider: provider
+      const connectionMap = {
+        google: 'google-oauth2',  
+        github: 'github'
       };
 
-      const result = await login(demoUser);
-      if (result.success) {
-        toast({
-          title: `Welcome to HoverFly Command Center!`,
-          description: `Signed in successfully with ${provider.charAt(0).toUpperCase() + provider.slice(1)}`,
-        });
-        navigate('/');
-      }
+      await loginWithRedirect({
+        authorizationParams: {
+          connection: connectionMap[provider],
+          screen_hint: isLogin ? 'login' : 'signup'
+        }
+      });
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Social login error:', error);
       toast({
-        title: "Authentication Failed",
-        description: "Please try again",
+        title: "Authentication Error",
+        description: "Unable to connect to authentication service. Please try again.",
         variant: "destructive",
       });
     }
@@ -66,28 +87,16 @@ const Auth = () => {
 
   const handleEmailAuth = async () => {
     try {
-      // Demo mode - simulate successful authentication  
-      const demoUser = {
-        sub: 'email|demo123',
-        email: formData.email || 'pilot@hoverfly-demo.com',
-        name: formData.name || 'Elite Pilot Alpha',
-        picture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-        provider: 'email'
-      };
-
-      const result = await login(demoUser);
-      if (result.success) {
-        toast({
-          title: "Welcome to HoverFly Command Center!",
-          description: "Authentication successful - accessing drone systems",
-        });
-        navigate('/');
-      }
+      await loginWithRedirect({
+        authorizationParams: {
+          screen_hint: isLogin ? 'login' : 'signup'
+        }
+      });
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Email auth error:', error);
       toast({
-        title: "Authentication Failed", 
-        description: "Please try again",
+        title: "Authentication Error", 
+        description: "Unable to connect to authentication service. Please try again.",
         variant: "destructive",
       });
     }
@@ -145,7 +154,7 @@ const Auth = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || auth0Loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-success/5 to-secondary/10 flex items-center justify-center">
         <div className="text-center">
@@ -290,7 +299,13 @@ const Auth = () => {
                     </p>
                   </div>
 
-                  {/* Social Login Buttons */}
+                  {/* Demo Notice */}
+                  <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 mb-6">
+                    <p className="text-xs text-warning-foreground">
+                      <strong>Demo Mode:</strong> Please configure your Auth0 domain in src/App.tsx to enable real authentication.
+                      Current buttons will work for demo access only.
+                    </p>
+                  </div>
                   <div className="space-y-4 mb-6">
                     {/* Google Login */}
                     <button
