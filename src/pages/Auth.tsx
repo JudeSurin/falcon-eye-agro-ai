@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -18,7 +17,6 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 
 const Auth = () => {
-  const { loginWithRedirect, user, isAuthenticated, isLoading: auth0Loading } = useAuth0();
   const { login, isLoading } = useAuthStore();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -33,52 +31,66 @@ const Auth = () => {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      handleAuth0Login();
-    }
-  }, [isAuthenticated, user]);
+  // Removed Auth0 dependency for demo mode
 
-  const handleAuth0Login = async () => {
+  // Removed Auth0 dependency for demo mode
+
+  const handleSocialLogin = async (provider: string) => {
     try {
-      const result = await login(user);
+      // Demo mode - simulate successful authentication
+      const demoUser = {
+        sub: `${provider}|demo123`,
+        email: `pilot@hoverfly-demo.com`,
+        name: 'Elite Pilot Alpha',
+        picture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+        provider: provider
+      };
+
+      const result = await login(demoUser);
       if (result.success) {
         toast({
-          title: "Welcome to HoverFly Command Center!",
-          description: "Access granted to elite aerial intelligence dashboard",
+          title: `Welcome to HoverFly Command Center!`,
+          description: `Signed in successfully with ${provider.charAt(0).toUpperCase() + provider.slice(1)}`,
         });
         navigate('/');
       }
     } catch (error) {
-      console.error('Login process error:', error);
+      console.error('Login error:', error);
       toast({
         title: "Authentication Failed",
-        description: "Please try again or contact support",
+        description: "Please try again",
         variant: "destructive",
       });
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    const connectionMap: Record<string, string> = {
-      google: 'google-oauth2',
-      github: 'github'
-    };
+  const handleEmailAuth = async () => {
+    try {
+      // Demo mode - simulate successful authentication  
+      const demoUser = {
+        sub: 'email|demo123',
+        email: formData.email || 'pilot@hoverfly-demo.com',
+        name: formData.name || 'Elite Pilot Alpha',
+        picture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+        provider: 'email'
+      };
 
-    loginWithRedirect({
-      authorizationParams: {
-        connection: connectionMap[provider],
-        screen_hint: isLogin ? 'login' : 'signup'
+      const result = await login(demoUser);
+      if (result.success) {
+        toast({
+          title: "Welcome to HoverFly Command Center!",
+          description: "Authentication successful - accessing drone systems",
+        });
+        navigate('/');
       }
-    });
-  };
-
-  const handleEmailAuth = () => {
-    loginWithRedirect({
-      authorizationParams: {
-        screen_hint: isLogin ? 'login' : 'signup'
-      }
-    });
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: "Authentication Failed", 
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
   };
 
   const validateForm = () => {
@@ -133,7 +145,7 @@ const Auth = () => {
     }
   };
 
-  if (auth0Loading || (isAuthenticated && isLoading)) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-success/5 to-secondary/10 flex items-center justify-center">
         <div className="text-center">
@@ -442,10 +454,9 @@ const Auth = () => {
 
             {/* Demo Notice */}
             <div className="mt-8 text-center">
-              <div className="bg-success/5 border border-success/20 rounded-xl p-4">
+              <div className="bg-success/10 border border-success/20 rounded-xl p-4">
                 <p className="text-sm text-success">
-                  <strong>Demo Version:</strong> This is a fully functional authentication prototype. 
-                  Click any login method to access the dashboard.
+                  <strong>🚁 Demo Mode:</strong> Click any authentication button to access the full HoverFly command center with all drone features!
                 </p>
               </div>
             </div>
