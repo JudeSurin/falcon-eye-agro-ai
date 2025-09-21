@@ -3,9 +3,9 @@ import { useState } from "react";
 import Header from "@/components/layout/Header";
 import StatsCard from "@/components/dashboard/StatsCard";
 import MissionMap from "@/components/dashboard/MissionMap";
+
 import WeatherWidget from "@/components/dashboard/WeatherWidget";
 import DetailModal from "@/components/dashboard/DetailModal";
-import GeminiChatbot from "@/components/chat/GeminiChatbot";
 import heroImage from "@/assets/hero-agricultural-drone.jpg";
 
 const Index = () => {
@@ -16,20 +16,26 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="relative h-96 overflow-hidden">
-    <div 
-      className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url(${heroImage})` }}
-    >
-      <div className="absolute inset-0 bg-gradient-hero"></div>
-    </div>
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${heroImage})` }}
+        >
+          <div className="absolute inset-0 bg-gradient-hero"></div>
+        </div>
         <div className="relative z-10 container mx-auto px-4 h-full flex items-center">
           <div className="max-w-2xl text-white">
             <h1 className="text-5xl font-bold mb-4 animate-fade-in">
               Elite Aerial Intelligence
             </h1>
             <p className="text-xl mb-6 text-white/90 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-              HoverFly precision surveillance technology for advanced agricultural monitoring and threat detection.
+              Falcon-eye precision surveillance technology for advanced agricultural monitoring and threat detection.
             </p>
+            <div className="flex gap-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+              <button className="btn-tactical px-8 py-3">
+                <Eye className="h-5 w-5 mr-2" />
+                View Intelligence
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -150,9 +156,6 @@ const Index = () => {
           onClose={() => setSelectedStat(null)} 
         />
       )}
-
-      {/* Gemini Chatbot */}
-      <GeminiChatbot />
     </div>
   );
 };

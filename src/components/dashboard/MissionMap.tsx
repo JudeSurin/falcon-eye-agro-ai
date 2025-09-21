@@ -115,7 +115,7 @@ export default function MissionMap() {
     if (!googleMapRef.current || mapInstance) return;
 
     const loader = new Loader({
-      apiKey: "AIzaSyBFw8xLhVVZJ4k-x5V_Lz7K3I_ABCD1234", // Replace with your actual Google Maps API key
+      apiKey: "AIzaSyAJGjJcU4nXG2-PKEUT_xcqquIJSRt8Qj4",
       version: "weekly",
     });
 
@@ -215,6 +215,10 @@ export default function MissionMap() {
           <Button size="sm" variant="outline" className="hover:border-primary/30">
             <Camera className="h-4 w-4 mr-2" />
             Capture Intel
+          </Button>
+          <Button size="sm" variant="outline" className="hover:border-primary/30">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Analysis Report
           </Button>
         </div>
       </div>
