@@ -1,11 +1,11 @@
-import { Activity, Zap, Shield, Target, Eye, BarChart3, X } from "lucide-react";
+import { Activity, Zap, Shield, Target, BarChart3, X } from "lucide-react";
 import { useState } from "react";
 import Header from "@/components/layout/Header";
 import StatsCard from "@/components/dashboard/StatsCard";
 import MissionMap from "@/components/dashboard/MissionMap";
-
 import WeatherWidget from "@/components/dashboard/WeatherWidget";
 import DetailModal from "@/components/dashboard/DetailModal";
+import HoverAI from "@/components/chat/HoverAI";
 import heroImage from "@/assets/hero-agricultural-drone.jpg";
 
 const Index = () => {
@@ -28,14 +28,8 @@ const Index = () => {
               Elite Aerial Intelligence
             </h1>
             <p className="text-xl mb-6 text-white/90 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-              Falcon-eye precision surveillance technology for advanced agricultural monitoring and threat detection.
+              HoverFly precision surveillance technology for advanced agricultural monitoring and threat detection.
             </p>
-            <div className="flex gap-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-              <button className="btn-tactical px-8 py-3">
-                <Eye className="h-5 w-5 mr-2" />
-                View Intelligence
-              </button>
-            </div>
           </div>
         </div>
       </section>
@@ -156,6 +150,9 @@ const Index = () => {
           onClose={() => setSelectedStat(null)} 
         />
       )}
+
+      {/* Hover AI Chatbot */}
+      <HoverAI />
     </div>
   );
 };
