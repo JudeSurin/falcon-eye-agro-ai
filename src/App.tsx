@@ -39,10 +39,10 @@ const AppContent = () => {
 
 const App = () => (
   <Auth0Provider
-    domain="dev-hoverfly.us.auth0.com"
+    domain="YOUR_AUTH0_DOMAIN.auth0.com"
     clientId="YOUR_AUTH0_CLIENT_ID"
     authorizationParams={{
-      redirect_uri: window.location.origin + '/auth'
+      redirect_uri: `${window.location.origin}/`
     }}
   >
     <QueryClientProvider client={queryClient}>

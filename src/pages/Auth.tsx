@@ -60,9 +60,14 @@ const Auth = () => {
   };
 
   const handleSocialLogin = (provider: string) => {
+    const connectionMap: Record<string, string> = {
+      google: 'google-oauth2',
+      github: 'github'
+    };
+
     loginWithRedirect({
       authorizationParams: {
-        connection: provider === 'google' ? 'google-oauth2' : 'github',
+        connection: connectionMap[provider],
         screen_hint: isLogin ? 'login' : 'signup'
       }
     });
@@ -107,7 +112,7 @@ const Auth = () => {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // For demo purposes, redirect to Auth0 hosted pages
+      // Redirect to Auth0 Universal Login for email/password authentication
       handleEmailAuth();
     }
   };
