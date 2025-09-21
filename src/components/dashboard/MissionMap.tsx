@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Zap, Activity, AlertTriangle, Target, Satellite, QrCode, X, Camera, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Loader } from "@googlemaps/js-api-loader";
 
 // Mock data for agricultural zones in Miami/Brickell area
 const mockZones = [
@@ -32,11 +31,9 @@ interface WaypointMarker {
 
 export default function MissionMap() {
   const mapRef = useRef<HTMLDivElement>(null);
-  const googleMapRef = useRef<HTMLDivElement>(null);
   const [showSatellite, setShowSatellite] = useState(false);
   const [showWaypointMode, setShowWaypointMode] = useState(false);
   const [waypoints, setWaypoints] = useState<WaypointMarker[]>([]);
-  const [mapInstance, setMapInstance] = useState<any>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
 
@@ -110,79 +107,9 @@ export default function MissionMap() {
     alert(`Mission deployed with ${waypoints.length} waypoints!`);
   };
 
-  // Initialize Google Maps
-  useEffect(() => {
-    if (!googleMapRef.current || mapInstance) return;
-
-    const loader = new Loader({
-      apiKey: "AIzaSyAJGjJcU4nXG2-PKEUT_xcqquIJSRt8Qj4",
-      version: "weekly",
-    });
-
-    loader.load().then(() => {
-      const map = new google.maps.Map(googleMapRef.current!, {
-        center: { lat: 25.7617, lng: -80.1918 }, // Miami/Brickell area
-        zoom: 15,
-        mapTypeId: showSatellite ? 'satellite' : 'roadmap',
-        styles: [
-          {
-            featureType: "all",
-            stylers: [{ saturation: -20 }, { lightness: 10 }]
-          }
-        ]
-      });
-
-      // Add markers for agricultural zones in Miami/Brickell
-      mockZones.forEach((zone) => {
-        const marker = new google.maps.Marker({
-          position: { lat: 25.7617 + (zone.x - 50) * 0.005, lng: -80.1918 + (zone.y - 50) * 0.005 },
-          map,
-          title: zone.name,
-          icon: {
-            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="8" fill="${
-                  zone.status === 'secure' ? '#10b981' :
-                  zone.status === 'monitor' ? '#f59e0b' :
-                  zone.status === 'alert' ? '#f97316' : '#ef4444'
-                }" stroke="white" stroke-width="2"/>
-              </svg>
-            `)}`,
-            scaledSize: new google.maps.Size(24, 24)
-          }
-        });
-
-        const infoWindow = new google.maps.InfoWindow({
-          content: `
-            <div style="padding: 12px; max-width: 200px;">
-              <img src="${zone.droneImage}" alt="Drone view" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />
-              <h3 style="margin: 0; font-weight: bold;">${zone.name}</h3>
-              <p style="margin: 4px 0; color: #666;">Health: ${zone.health}%</p>
-              <p style="margin: 4px 0; color: #666;">Status: ${zone.status.toUpperCase()}</p>
-              <p style="margin: 4px 0; color: #888; font-size: 12px;">Live drone footage</p>
-            </div>
-          `
-        });
-
-        marker.addListener('click', () => {
-          infoWindow.open(map, marker);
-        });
-      });
-
-      setMapInstance(map);
-    }).catch(() => {
-      // Fallback to tactical map if Google Maps fails to load
-      console.log('Google Maps failed to load, using fallback');
-    });
-  }, [showSatellite]);
-
   // Toggle map type
   const toggleMapType = () => {
-    if (mapInstance) {
-      const newType = showSatellite ? 'roadmap' : 'satellite';
-      mapInstance.setMapTypeId(newType);
-      setShowSatellite(!showSatellite);
-    }
+    setShowSatellite(!showSatellite);
   };
 
   return (
@@ -264,14 +191,15 @@ export default function MissionMap() {
           </div>
         )}
         
-        {/* Google Maps */}
-        <div ref={googleMapRef} className="absolute inset-0 w-full h-full" />
-        
-        {/* Fallback Tactical Map */}
+        {/* Tactical Map */}
         <div 
           ref={mapRef}
-          className="absolute inset-0 bg-gradient-to-br from-success/5 to-secondary/5 cursor-pointer"
-          style={{ display: mapInstance ? 'none' : 'block' }}
+          className={cn(
+            "absolute inset-0 cursor-pointer transition-all duration-500",
+            showSatellite 
+              ? "bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900" 
+              : "bg-gradient-to-br from-success/5 to-secondary/5"
+          )}
           onClick={handleMapClick}
         >
         {/* Tactical Grid Overlay */}
