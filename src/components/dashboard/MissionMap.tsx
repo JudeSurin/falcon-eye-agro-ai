@@ -1,9 +1,12 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Zap, Activity, AlertTriangle, Target, Satellite, QrCode, X, Camera, BarChart3 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MapPin, Zap, Activity, AlertTriangle, Target, Satellite, QrCode, X, Camera, BarChart3, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 // Mock data for agricultural zones in Miami/Brickell area
 const mockZones = [
@@ -30,12 +33,16 @@ interface WaypointMarker {
 }
 
 export default function MissionMap() {
-  const mapRef = useRef<HTMLDivElement>(null);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
   const [showSatellite, setShowSatellite] = useState(false);
   const [showWaypointMode, setShowWaypointMode] = useState(false);
   const [waypoints, setWaypoints] = useState<WaypointMarker[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
+  const [mapboxToken, setMapboxToken] = useState<string>('');
+  const [showTokenInput, setShowTokenInput] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   const handleMapClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!showWaypointMode || waypoints.length >= 10) return;
@@ -107,9 +114,73 @@ export default function MissionMap() {
     alert(`Mission deployed with ${waypoints.length} waypoints!`);
   };
 
-  // Toggle map type for tactical view
+  // Initialize Mapbox
+  useEffect(() => {
+    if (!mapContainer.current || !mapboxToken || mapRef.current) return;
+
+    mapboxgl.accessToken = mapboxToken;
+    
+    mapRef.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: showSatellite ? 'mapbox://styles/mapbox/satellite-v9' : 'mapbox://styles/mapbox/light-v11',
+      center: [-80.1918, 25.7617], // Miami/Brickell area
+      zoom: 15,
+      bearing: 0,
+      pitch: 45
+    });
+
+    // Add navigation controls
+    mapRef.current.addControl(
+      new mapboxgl.NavigationControl({
+        visualizePitch: true,
+      }),
+      'top-right'
+    );
+
+    // Add agricultural zone markers
+    mapRef.current.on('load', () => {
+      setMapLoaded(true);
+      
+      mockZones.forEach((zone) => {
+        const marker = new mapboxgl.Marker({
+          color: zone.status === 'secure' ? '#10b981' :
+                 zone.status === 'monitor' ? '#f59e0b' :
+                 zone.status === 'alert' ? '#f97316' : '#ef4444'
+        })
+        .setLngLat([-80.1918 + (zone.x - 50) * 0.005, 25.7617 + (zone.y - 50) * 0.005])
+        .setPopup(
+          new mapboxgl.Popup({ offset: 25 }).setHTML(`
+            <div style="padding: 12px; max-width: 200px;">
+              <img src="${zone.droneImage}" alt="Drone view" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />
+              <h3 style="margin: 0; font-weight: bold;">${zone.name}</h3>
+              <p style="margin: 4px 0; color: #666;">Health: ${zone.health}%</p>
+              <p style="margin: 4px 0; color: #666;">Status: ${zone.status.toUpperCase()}</p>
+              <p style="margin: 4px 0; color: #888; font-size: 12px;">Live drone footage</p>
+            </div>
+          `)
+        )
+        .addTo(mapRef.current!);
+      });
+    });
+
+    return () => {
+      mapRef.current?.remove();
+    };
+  }, [mapboxToken, showSatellite]);
+
+  // Toggle map style
   const toggleMapType = () => {
-    setShowSatellite(!showSatellite);
+    if (mapRef.current && mapLoaded) {
+      const newStyle = showSatellite ? 'mapbox://styles/mapbox/light-v11' : 'mapbox://styles/mapbox/satellite-v9';
+      mapRef.current.setStyle(newStyle);
+      setShowSatellite(!showSatellite);
+    }
+  };
+
+  const handleTokenSubmit = () => {
+    if (mapboxToken.trim()) {
+      setShowTokenInput(false);
+    }
   };
 
   return (
@@ -120,6 +191,15 @@ export default function MissionMap() {
           <p className="text-sm text-muted-foreground">Real-time agricultural intelligence</p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="hover:border-primary/30" 
+            onClick={() => setShowTokenInput(!showTokenInput)}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Map Settings
+          </Button>
           <Button 
             size="sm" 
             variant="outline" 
@@ -150,6 +230,30 @@ export default function MissionMap() {
         </div>
       </div>
 
+      {/* Mapbox Token Input */}
+      {showTokenInput && (
+        <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border border-primary/20">
+          <div className="flex items-center gap-2 mb-2">
+            <Settings className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-foreground">Mapbox Configuration</span>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Get your free public token from <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">mapbox.com</a> → Account → Tokens
+          </p>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Enter your Mapbox public token (pk.eyJ1...)"
+              value={mapboxToken}
+              onChange={(e) => setMapboxToken(e.target.value)}
+              className="flex-1"
+            />
+            <Button size="sm" onClick={handleTokenSubmit} disabled={!mapboxToken.trim()}>
+              Apply
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Map Toggle Bar */}
       <div className="mb-4 flex items-center justify-between p-3 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border border-primary/20">
         <div className="flex items-center gap-2">
@@ -161,6 +265,7 @@ export default function MissionMap() {
           variant="outline"
           onClick={toggleMapType}
           className="hover:border-primary/30"
+          disabled={!mapboxToken || !mapLoaded}
         >
           {showSatellite ? 'Map View' : 'Satellite View'}
         </Button>
@@ -191,15 +296,25 @@ export default function MissionMap() {
           </div>
         )}
         
-        {/* Tactical Map */}
+        {/* Mapbox Map */}
+        {mapboxToken ? (
+          <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
+            <div className="text-center p-6">
+              <Settings className="h-8 w-8 text-primary mx-auto mb-2" />
+              <p className="text-foreground font-medium mb-1">Map Configuration Required</p>
+              <p className="text-sm text-muted-foreground mb-3">Click "Map Settings" to configure Mapbox</p>
+              <Button size="sm" onClick={() => setShowTokenInput(true)}>
+                Configure Map
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Tactical Overlay for Waypoints */}
         <div 
-          ref={mapRef}
-          className={cn(
-            "absolute inset-0 cursor-pointer transition-all duration-300",
-            showSatellite 
-              ? "bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900" 
-              : "bg-gradient-to-br from-success/5 to-secondary/5"
-          )}
+          className="absolute inset-0 cursor-pointer"
           onClick={handleMapClick}
         >
         {/* Tactical Grid Overlay */}
