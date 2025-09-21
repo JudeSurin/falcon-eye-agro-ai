@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { MapPin, Zap, Activity, AlertTriangle, Target, Satellite, QrCode, X, Camera, BarChart3, Settings, Globe } from "lucide-react";
+import { MapPin, Zap, Activity, AlertTriangle, Target, Satellite, QrCode, X, Camera, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Loader } from "@googlemaps/js-api-loader";
 
@@ -32,19 +31,14 @@ interface WaypointMarker {
 }
 
 export default function MissionMap() {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const googleMapRef = useRef<google.maps.Map | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const googleMapRef = useRef<HTMLDivElement>(null);
   const [showSatellite, setShowSatellite] = useState(false);
   const [showWaypointMode, setShowWaypointMode] = useState(false);
   const [waypoints, setWaypoints] = useState<WaypointMarker[]>([]);
+  const [mapInstance, setMapInstance] = useState<any>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>(() => 
-    localStorage.getItem('googleMapsApiKey') || ''
-  );
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [earthEngineLoaded, setEarthEngineLoaded] = useState(false);
 
   const handleMapClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!showWaypointMode || waypoints.length >= 10) return;
@@ -116,177 +110,78 @@ export default function MissionMap() {
     alert(`Mission deployed with ${waypoints.length} waypoints!`);
   };
 
-  // Initialize Google Maps with Earth Engine
+  // Initialize Google Maps
   useEffect(() => {
-    if (!mapContainer.current || !googleMapsApiKey || googleMapRef.current) return;
+    if (!googleMapRef.current || mapInstance) return;
 
     const loader = new Loader({
-      apiKey: googleMapsApiKey,
+      apiKey: "AIzaSyAJGjJcU4nXG2-PKEUT_xcqquIJSRt8Qj4",
       version: "weekly",
-      libraries: ["geometry", "drawing", "visualization"]
     });
 
     loader.load().then(() => {
-      if (!mapContainer.current) return;
-
-      // Initialize Google Map
-      googleMapRef.current = new google.maps.Map(mapContainer.current, {
+      const map = new google.maps.Map(googleMapRef.current!, {
         center: { lat: 25.7617, lng: -80.1918 }, // Miami/Brickell area
         zoom: 15,
-        mapTypeId: showSatellite ? google.maps.MapTypeId.SATELLITE : google.maps.MapTypeId.ROADMAP,
-        styles: showSatellite ? [] : [
+        mapTypeId: showSatellite ? 'satellite' : 'roadmap',
+        styles: [
           {
             featureType: "all",
             stylers: [{ saturation: -20 }, { lightness: 10 }]
-          },
-          {
-            featureType: "water",
-            stylers: [{ color: "#4a90e2" }]
-          },
-          {
-            featureType: "landscape",
-            stylers: [{ color: "#f0f8ff" }]
           }
-        ],
-        tilt: 45,
-        heading: 0,
-        mapTypeControl: true,
-        mapTypeControlOptions: {
-          style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-          position: google.maps.ControlPosition.TOP_CENTER,
-          mapTypeIds: [
-            google.maps.MapTypeId.ROADMAP,
-            google.maps.MapTypeId.SATELLITE,
-            google.maps.MapTypeId.HYBRID,
-            google.maps.MapTypeId.TERRAIN
-          ]
-        }
+        ]
       });
 
-      // Add Earth Engine imagery overlay for agricultural analysis
-      const addEarthEngineLayer = () => {
-        // Simulate Earth Engine agricultural monitoring overlay
-        const agriculturalOverlay = new google.maps.GroundOverlay(
-          'data:image/svg+xml;base64,' + btoa(`
-            <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <radialGradient id="vegetation" cx="50%" cy="50%">
-                  <stop offset="0%" style="stop-color:#00ff00;stop-opacity:0.3" />
-                  <stop offset="50%" style="stop-color:#ffff00;stop-opacity:0.2" />
-                  <stop offset="100%" style="stop-color:#ff0000;stop-opacity:0.1" />
-                </radialGradient>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#vegetation)" />
-              <text x="50%" y="50%" text-anchor="middle" fill="white" font-size="12">
-                Agricultural Health Analysis
-              </text>
-            </svg>
-          `),
-          new google.maps.LatLngBounds(
-            new google.maps.LatLng(25.750, -80.200),
-            new google.maps.LatLng(25.770, -80.180)
-          )
-        );
-
-        agriculturalOverlay.setMap(googleMapRef.current);
-        setEarthEngineLoaded(true);
-      };
-
-      // Add agricultural zone markers with enhanced Earth Engine data
+      // Add markers for agricultural zones in Miami/Brickell
       mockZones.forEach((zone) => {
         const marker = new google.maps.Marker({
-          position: { 
-            lat: 25.7617 + (zone.x - 50) * 0.005, 
-            lng: -80.1918 + (zone.y - 50) * 0.005 
-          },
-          map: googleMapRef.current,
+          position: { lat: 25.7617 + (zone.x - 50) * 0.005, lng: -80.1918 + (zone.y - 50) * 0.005 },
+          map,
           title: zone.name,
           icon: {
             url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="16" cy="16" r="12" fill="${
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="8" fill="${
                   zone.status === 'secure' ? '#10b981' :
                   zone.status === 'monitor' ? '#f59e0b' :
                   zone.status === 'alert' ? '#f97316' : '#ef4444'
-                }" stroke="white" stroke-width="3"/>
-                <circle cx="16" cy="16" r="6" fill="white" opacity="0.8"/>
-                <text x="16" y="20" text-anchor="middle" fill="${
-                  zone.status === 'secure' ? '#10b981' :
-                  zone.status === 'monitor' ? '#f59e0b' :
-                  zone.status === 'alert' ? '#f97316' : '#ef4444'
-                }" font-size="8" font-weight="bold">${zone.health}</text>
+                }" stroke="white" stroke-width="2"/>
               </svg>
             `)}`,
-            scaledSize: new google.maps.Size(32, 32),
-            anchor: new google.maps.Point(16, 16)
+            scaledSize: new google.maps.Size(24, 24)
           }
         });
 
         const infoWindow = new google.maps.InfoWindow({
           content: `
-            <div style="padding: 15px; max-width: 250px; font-family: Arial, sans-serif;">
-              <img src="${zone.droneImage}" alt="Earth Engine Analysis" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px; margin-bottom: 10px;" />
-              <h3 style="margin: 0 0 8px 0; font-weight: bold; color: #333;">${zone.name}</h3>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <span style="color: #666;">Health Score:</span>
-                <span style="font-weight: bold; color: ${
-                  zone.health >= 80 ? '#10b981' :
-                  zone.health >= 60 ? '#f59e0b' :
-                  zone.health >= 40 ? '#f97316' : '#ef4444'
-                };">${zone.health}%</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <span style="color: #666;">Status:</span>
-                <span style="font-weight: bold; text-transform: uppercase; color: ${
-                  zone.status === 'secure' ? '#10b981' :
-                  zone.status === 'monitor' ? '#f59e0b' :
-                  zone.status === 'alert' ? '#f97316' : '#ef4444'
-                };">${zone.status}</span>
-              </div>
-              <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; margin-top: 8px;">
-                <div style="display: flex; align-items: center; gap: 4px;">
-                  <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; animation: pulse 2s infinite;"></div>
-                  <span style="font-size: 12px; color: #10b981; font-weight: bold;">Earth Engine Analysis Active</span>
-                </div>
-              </div>
+            <div style="padding: 12px; max-width: 200px;">
+              <img src="${zone.droneImage}" alt="Drone view" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />
+              <h3 style="margin: 0; font-weight: bold;">${zone.name}</h3>
+              <p style="margin: 4px 0; color: #666;">Health: ${zone.health}%</p>
+              <p style="margin: 4px 0; color: #666;">Status: ${zone.status.toUpperCase()}</p>
+              <p style="margin: 4px 0; color: #888; font-size: 12px;">Live drone footage</p>
             </div>
           `
         });
 
         marker.addListener('click', () => {
-          infoWindow.open(googleMapRef.current, marker);
+          infoWindow.open(map, marker);
         });
       });
 
-      // Add Earth Engine overlay after map loads
-      google.maps.event.addListenerOnce(googleMapRef.current, 'idle', () => {
-        addEarthEngineLayer();
-        setMapLoaded(true);
-      });
-
-    }).catch((error) => {
-      console.error('Google Maps failed to load:', error);
-      setMapLoaded(false);
+      setMapInstance(map);
+    }).catch(() => {
+      // Fallback to tactical map if Google Maps fails to load
+      console.log('Google Maps failed to load, using fallback');
     });
+  }, [showSatellite]);
 
-    return () => {
-      googleMapRef.current = null;
-    };
-  }, [googleMapsApiKey, showSatellite]);
-
-  // Toggle map type between satellite and roadmap
+  // Toggle map type
   const toggleMapType = () => {
-    if (googleMapRef.current && mapLoaded) {
-      const newMapType = showSatellite ? google.maps.MapTypeId.ROADMAP : google.maps.MapTypeId.SATELLITE;
-      googleMapRef.current.setMapTypeId(newMapType);
+    if (mapInstance) {
+      const newType = showSatellite ? 'roadmap' : 'satellite';
+      mapInstance.setMapTypeId(newType);
       setShowSatellite(!showSatellite);
-    }
-  };
-
-  const handleApiKeySubmit = () => {
-    if (googleMapsApiKey.trim()) {
-      localStorage.setItem('googleMapsApiKey', googleMapsApiKey);
-      setShowApiKeyInput(false);
     }
   };
 
@@ -298,15 +193,6 @@ export default function MissionMap() {
           <p className="text-sm text-muted-foreground">Real-time agricultural intelligence</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="hover:border-primary/30" 
-            onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            API Settings
-          </Button>
           <Button 
             size="sm" 
             variant="outline" 
@@ -332,62 +218,24 @@ export default function MissionMap() {
           </Button>
           <Button size="sm" variant="outline" className="hover:border-primary/30">
             <BarChart3 className="h-4 w-4 mr-2" />
-            Earth Engine Analysis
+            Analysis Report
           </Button>
         </div>
       </div>
 
-      {/* Google Maps API Key Input */}
-      {showApiKeyInput && (
-        <div className="mb-4 p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border border-primary/20">
-          <div className="flex items-center gap-2 mb-2">
-            <Globe className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-foreground">Google Maps & Earth Engine API</span>
-          </div>
-          <p className="text-xs text-muted-foreground mb-3">
-            Get your API key from <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Cloud Console</a> → APIs & Services → Credentials
-            <br />
-            <span className="text-xs text-muted-foreground/80">Enable: Maps JavaScript API, Earth Engine API</span>
-          </p>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Enter your Google Maps API key"
-              value={googleMapsApiKey}
-              onChange={(e) => setGoogleMapsApiKey(e.target.value)}
-              className="flex-1"
-              type="password"
-            />
-            <Button size="sm" onClick={handleApiKeySubmit} disabled={!googleMapsApiKey.trim()}>
-              Apply
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground/70 mt-2">
-            💡 Google Maps API keys are publishable keys - they're designed for frontend use and secured by domain restrictions.
-          </p>
-        </div>
-      )}
-
       {/* Map Toggle Bar */}
       <div className="mb-4 flex items-center justify-between p-3 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border border-primary/20">
         <div className="flex items-center gap-2">
-          <Globe className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-foreground">Google Maps & Earth Engine</span>
-          {earthEngineLoaded && (
-            <Badge variant="outline" className="text-xs">
-              <div className="w-2 h-2 bg-success rounded-full animate-pulse mr-1"></div>
-              Earth Engine Active
-            </Badge>
-          )}
+          <Satellite className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium text-foreground">Map View</span>
         </div>
         <Button
           size="sm"
           variant="outline"
           onClick={toggleMapType}
           className="hover:border-primary/30"
-          disabled={!googleMapsApiKey || !mapLoaded}
         >
-          <Satellite className="h-4 w-4 mr-2" />
-          {showSatellite ? 'Road View' : 'Satellite View'}
+          {showSatellite ? 'Map View' : 'Satellite View'}
         </Button>
       </div>
 
@@ -416,26 +264,14 @@ export default function MissionMap() {
           </div>
         )}
         
-        {/* Google Maps with Earth Engine */}
-        {googleMapsApiKey ? (
-          <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
-            <div className="text-center p-6">
-              <Globe className="h-8 w-8 text-primary mx-auto mb-2" />
-              <p className="text-foreground font-medium mb-1">Google Maps & Earth Engine</p>
-              <p className="text-sm text-muted-foreground mb-3">Configure API access for advanced agricultural monitoring</p>
-              <Button size="sm" onClick={() => setShowApiKeyInput(true)}>
-                <Settings className="h-4 w-4 mr-2" />
-                Configure API
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Waypoint Overlay */}
+        {/* Google Maps */}
+        <div ref={googleMapRef} className="absolute inset-0 w-full h-full" />
+        
+        {/* Fallback Tactical Map */}
         <div 
-          className="absolute inset-0 cursor-pointer"
+          ref={mapRef}
+          className="absolute inset-0 bg-gradient-to-br from-success/5 to-secondary/5 cursor-pointer"
+          style={{ display: mapInstance ? 'none' : 'block' }}
           onClick={handleMapClick}
         >
         {/* Tactical Grid Overlay */}
