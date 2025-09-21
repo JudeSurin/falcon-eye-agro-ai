@@ -1,4 +1,4 @@
-import { Bell, Settings, User, Shield, Zap } from "lucide-react";
+import { Bell, Settings, User, Shield, Zap, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,8 +8,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import falconLogo from "@/assets/falcon-logo.png";
+import { useAuthStore } from "@/store/authStore";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export default function Header() {
+  const { user, logout } = useAuthStore();
+  const { logout: auth0Logout } = useAuth0();
+
+  const handleLogout = () => {
+    logout();
+    auth0Logout({
+      logoutParams: {
+        returnTo: window.location.origin + '/auth'
+      }
+    });
+  };
+
   return (
     <header className="bg-white/95 backdrop-blur-sm border-b border-border/50 sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -48,10 +62,20 @@ export default function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                <span className="hidden md:block text-sm font-medium">Pilot Alpha</span>
+                {user?.picture ? (
+                  <img 
+                    src={user.picture} 
+                    alt={user.name || 'User'}
+                    className="w-8 h-8 rounded-full"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4 text-white" />
+                  </div>
+                )}
+                <span className="hidden md:block text-sm font-medium">
+                  {user?.name || 'Pilot Alpha'}
+                </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -66,6 +90,10 @@ export default function Header() {
               <DropdownMenuItem>
                 <Shield className="mr-2 h-4 w-4" />
                 Security
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
