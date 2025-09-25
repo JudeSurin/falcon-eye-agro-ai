@@ -765,11 +765,6 @@ X-RateLimit-Reset: 1640995200
 
 For API support and questions:
 
-- **Documentation**: [https://docs.hoverfly.com/api](https://docs.hoverfly.com/api)
-- **GitHub Issues**: [Report API issues](https://github.com/yourusername/hoverfly/issues)
-- **Email**: api-support@hoverfly.com
-- **Response Time**: 24-48 hours for non-critical issues
-
 ---
 
 *This API documentation is automatically updated with each release. For the latest version, visit our [online documentation](https://docs.hoverfly.com/api).*
